@@ -36,7 +36,7 @@ import re
 class CoreList(set):
 
     def __init__(self, core_list):
-        if isinstance(core_list, int) and core_list < (1 << 64):
+        if isinstance(core_list, int) and 0 <= core_list <= (1 << 64):
             self._format_core_mask(core_list)
         elif core_list.find(",") != -1 or core_list.find("-") != -1:
             self._format_string_core_list(core_list)
@@ -85,8 +85,8 @@ class CoreList(set):
 
         def fmt(s, e):
             if s is e:
-                return str(core_start)
-            return "%s-%s" % (core_start, core_end)
+                return str(s)
+            return "%s-%s" % (s, e)
 
         core_list = []
         core_start, core_end = 0, 0
@@ -96,6 +96,7 @@ class CoreList(set):
                 step += 1
             else:
                 core_list.append(fmt(core_start, core_end))
+
                 step = 1
                 core_start = curr
 

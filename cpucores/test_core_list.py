@@ -4,7 +4,7 @@ from cpucores import CoreList
 
 class MyTestCase(unittest.TestCase):
     def test_range(self):
-        s_core_list = "50,21,0,10-12,15,16,18-20"
+        s_core_list = "50,21,0,10-12,15,16,20-18"
         cl = CoreList(s_core_list)
         self.assertEqual("0,10-12,15-16,18-21,50", cl.core_range)
 
