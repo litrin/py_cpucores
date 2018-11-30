@@ -20,17 +20,17 @@ class MyTestCase(unittest.TestCase):
         self.assertEqual(cl.core_range, "0-3,8-10")
 
     def test_iter(self):
-        cl = CoreList(0xFFFFFFFFF)
+        cl = CoreList(0xFFFFFFF)
         for i, c in enumerate(cl):
             self.assertEqual(i, c)
 
     def test_str_input(self):
-
         cl = CoreList("11")
         self.assertEqual(cl.core_list, "11")
 
         cl = CoreList("12,11")
         self.assertEqual(cl.core_list, "11,12")
+
 
 if __name__ == '__main__':
     unittest.main()

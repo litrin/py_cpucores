@@ -36,14 +36,15 @@ import re
 class CoreList(set):
 
     def __init__(self, core_list):
-        if isinstance(core_list, int) and 0 <= core_list <= (1 << 64):
+        if isinstance(core_list, int):
             self._format_core_mask(core_list)
         elif core_list.find(",") != -1 or core_list.find("-") != -1:
             self._format_string_core_list(core_list)
         elif re.match(r"^\d+$", core_list):
             self.add(int(core_list))
         else:
-            raise TypeError("%s is not a correct core list format!" % core_list)
+            raise TypeError(
+                "%s is not a correct core list format!" % core_list)
 
     def _format_core_mask(self, core_list):
         i = 0
