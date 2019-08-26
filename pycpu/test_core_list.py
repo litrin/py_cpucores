@@ -1,8 +1,8 @@
 import unittest
-from cpucores import CoreList
+from pycpu.cpucores import CoreList
 
 
-class MyTestCase(unittest.TestCase):
+class TestCPUCoreList(unittest.TestCase):
     def test_range(self):
         s_core_list = "50,21,0,10-12,15,16,20-18"
         cl = CoreList(s_core_list)
