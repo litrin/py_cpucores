@@ -30,9 +30,10 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
-import os
-import sys
 import abc
+import os
+
+import sys
 
 
 class BaseCPUInfo:
@@ -43,7 +44,7 @@ class BaseCPUInfo:
     cores = None
     freq = 0
     freq_range = (0, 0)
-    feature = []
+    features = []
 
     cpu_info_command = None
 
@@ -58,7 +59,10 @@ class BaseCPUInfo:
         self.cpu_description = self.read_data(data)
 
     def read_data(self, data):
-        pass
+        return data
+
+    def has_feature(self, name):
+        return name.lower() in self.features
 
 
 class CPUInfoMac(BaseCPUInfo):
@@ -105,17 +109,63 @@ class CPUInfoMac(BaseCPUInfo):
 
     @property
     def freq_range(self):
-        return self._get_int_attr("cpufrequency_min") // 10E6, self._get_int_attr("cpufrequency_max") // 10E6
+        return self._get_int_attr(
+            "cpufrequency_min") // 10E6, self._get_int_attr(
+            "cpufrequency_max") // 10E6
 
     @property
-    def feature(self):
+    def features(self):
         return self.cpu_description["feature"]
 
-    def has_feature(self, name):
-        return name.lower() in self.feature
+
+class CPUInfoLinux(BaseCPUInfo):
+    cpu_info_command = "LANGUAGE=en_US:en lscpu"
+
+    def read_data(self, data):
+        tmp_value = {}
+        for line in data:
+            line = line.split(":")
+            key = line[0].lower().strip()
+            value = ":".join(line[1:]).lower().strip()
+            tmp_value[key] = value
+        return tmp_value
+
+    def _get_int_attr(self, value):
+        return int(self.cpu_description[value])
+
+    @property
+    def nodes(self):
+        return self._get_int_attr("numa node(s)")
+
+    @property
+    def sockets(self):
+        return self._get_int_attr("socket(s)")
+
+    @property
+    def cores(self):
+        return self.sockets * self._get_int_attr("core(s) per socket")
+
+    @property
+    def cpus(self):
+        return self._get_int_attr("cpu(s)")
+
+    @property
+    def freq(self):
+        return int(float(self.cpu_description["cpu mhz"]))
+
+    @property
+    def freq_range(self):
+        get_int = lambda a: int(float(self.cpu_description[a]))
+        return get_int("cpu min mhz"), get_int("cpu max mhz")
+
+    @property
+    def features(self):
+        return self.cpu_description["flags"].split()
 
 
 if sys.platform == "darwin":
     CPUInfo = CPUInfoMac
+elif sys.platform == "linux":
+    CPUInfo = CPUInfoLinux
 else:
     CPUInfo = NotImplemented
