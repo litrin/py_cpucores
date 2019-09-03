@@ -163,9 +163,75 @@ class CPUInfoLinux(BaseCPUInfo):
         return self.cpu_description["flags"].split()
 
 
+class CPUInfoWin32(BaseCPUInfo):
+
+    # todo: encode issue, file input is invalid
+
+    cpu_info_command = "wmic cpu get"
+
+    def read_data(self, data):
+        column_name, values = [], []
+
+        t_col = data[0].lstrip()
+        t_val = data[2].lstrip()
+
+        while True:
+            offset = t_col.find(" ")
+            if offset is -1:
+                break
+
+            col = t_col[:offset]
+
+            offset += len(t_col[offset:]) - len(t_col[offset:].lstrip())
+            val = t_val[:offset].rstrip()
+
+            if len(col) > 0 and len(val) > 0:
+                column_name.append(col)
+                values.append(val)
+
+            t_val = t_val[offset:]
+            t_col = t_col[offset:]
+
+        # # last col must empty
+        # column_name.append(t_col)
+        # values.append(t_val.rstrip())
+
+        return dict(zip(column_name, values))
+
+    @property
+    def nodes(self):
+        pass
+
+    @property
+    def sockets(self):
+        pass
+
+    @property
+    def cores(self):
+        return int(self.cpu_description["NumberOfCores"])
+
+    @property
+    def cpus(self):
+        return int(self.cpu_description["NumberOfLogicalProcessors"])
+
+    @property
+    def freq(self):
+        return int(self.cpu_description["CurrentClockSpeed"])
+
+    @property
+    def freq_range(self):
+        return 0, int(self.cpu_description["MaxClockSpeed"])
+
+    @property
+    def features(self):
+        return []
+
+
 if sys.platform == "darwin":
     CPUInfo = CPUInfoMac
 elif sys.platform == "linux":
     CPUInfo = CPUInfoLinux
+elif sys.platform == "win32":
+    CPUInfo = CPUInfoWin32
 else:
     CPUInfo = NotImplemented
