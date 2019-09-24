@@ -89,10 +89,11 @@ class CoreList(set):
                 return str(s)
             return "%s-%s" % (s, e)
 
+        all_cores = sorted(self)
         core_list = []
-        core_start, core_end = 0, 0
+        core_start, core_end = all_cores[0], 0
         step = 0
-        for curr in sorted(self):
+        for curr in all_cores:
             if curr is (core_start + step):
                 step += 1
             else:

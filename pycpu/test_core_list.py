@@ -9,9 +9,10 @@ class TestCPUCoreList(unittest.TestCase):
         self.assertEqual("0,10-12,15-16,18-21,50", cl.core_range)
 
     def test_mask(self):
-        s_core_list = "0-3"
+        s_core_list = "1,2,3,8"
         cl = CoreList(s_core_list)
-        self.assertEqual(cl.core_mask, 0xf)
+        self.assertEqual(cl.core_mask, 0x10E)
+        self.assertEqual(str(cl), "1-3,8")
 
     def test_list(self):
         s_core_list = 0x70F
