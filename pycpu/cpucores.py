@@ -46,10 +46,10 @@ class CoreList(set):
             raise TypeError(
                 "%s is not a correct core list format!" % core_list)
 
-    def _format_core_mask(self, core_list):
+    def _format_core_mask(self, core_mask):
         i = 0
-        while core_list > (1 << i):
-            if 1 << i & core_list:
+        while core_mask >= (1 << i):
+            if 1 << i & core_mask:
                 self.add(i)
             i += 1
 
