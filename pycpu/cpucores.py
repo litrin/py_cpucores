@@ -47,11 +47,12 @@ class CoreList(set):
                 "%s is not a correct core list format!" % core_list)
 
     def _format_core_mask(self, core_mask):
-        i = 0
-        while core_mask >= (1 << i):
-            if 1 << i & core_mask:
-                self.add(i)
-            i += 1
+        curr_core = 0
+        while core_mask > 0:
+            if 1 & core_mask:
+                self.add(curr_core)
+            curr_core += 1
+            core_mask >>= 1
 
     def _format_string_core_list(self, core_list):
         core_list = core_list.split(",")
