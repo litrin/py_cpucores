@@ -30,6 +30,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
+
 class CPUcores(int):
 
     @staticmethod
@@ -76,7 +77,7 @@ class CPUcores(int):
         return CPUcores(cores)
 
     def __str__(self):
-        i, step = 0, 0
+        core_id, step = 0, 0
         desc = []
 
         def fmt(curr_core, step):
@@ -87,23 +88,23 @@ class CPUcores(int):
                 return "%s,%s" % (curr_core - 1, curr_core)
             return "%s-%s" % (curr_core - step, curr_core)
 
-        while i <= self.bit_length():
-            if 1 << i & self:
+        while core_id <= self.bit_length():
+            if 1 << core_id & self:
                 step += 1
             elif step > 0:
-                desc.append(fmt(i - 1, step))
+                desc.append(fmt(core_id - 1, step))
                 step = 0
 
-            i += 1
+            core_id += 1
 
         return ",".join(desc)
 
     def __iter__(self):
-        i = 0
-        while i <= self.bit_length():
-            if 1 << i & self:
-                yield i
-            i += 1
+        core_id = 0
+        while core_id <= self.bit_length():
+            if 1 << core_id & self:
+                yield core_id
+            core_id += 1
 
     def __len__(self):
         tmp, length = self, 0
@@ -112,3 +113,39 @@ class CPUcores(int):
             tmp &= (tmp - 1)
 
         return length
+
+    def all_cores(self):
+        return ",".join(map(str, self))
+
+
+if __name__ == "__main__":
+    import optparse
+
+    parser = optparse.OptionParser()
+    parser.add_option("-d", "--desc", dest="desc", action="store",
+                      type="string", help="input core set description")
+
+    parser.add_option("-x", "--hex", action="store", type="string",
+                      help="input core mask bu hex")
+
+    parser.add_option("-b", "--bin", action="store", type="string",
+                      help="input core mask by binary")
+
+    parser.add_option("-l", "--line", action="count", help="separated by rows")
+
+    (options, args) = parser.parse_args()
+
+    core_set = None
+    if options.desc is not None:
+        core_set = CPUcores.from_desc(options.desc)
+    if options.hex is not None:
+        core_set = CPUcores.from_hex(options.hex)
+    if options.bin is not None:
+        core_set = CPUcores.from_bit(options.bin)
+
+    if core_set is None:
+        exit()
+    elif options.line is not None:
+        [print(core) for core in core_set]
+    else:
+        print(core_set.all_cores())
