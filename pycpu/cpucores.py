@@ -30,84 +30,122 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
-import re
 
+class CPUcores(int):
 
-class CoreList(set):
+    @staticmethod
+    def from_bit(b):
+        return CPUcores(b, 2)
 
-    def __init__(self, core_list):
-        if isinstance(core_list, int):
-            self._format_core_mask(core_list)
-        elif core_list.find(",") != -1 or core_list.find("-") != -1:
-            self._format_string_core_list(core_list)
-        elif re.match(r"^\d+$", core_list):
-            self.add(int(core_list))
-        else:
-            raise TypeError(
-                "%s is not a correct core list format!" % core_list)
+    @staticmethod
+    def from_hex(h):
+        return CPUcores(h, 16)
 
-    def _format_core_mask(self, core_mask):
-        curr_core = 0
-        while core_mask > 0:
-            if 1 & core_mask:
-                self.add(curr_core)
-            curr_core += 1
-            core_mask >>= 1
+    @staticmethod
+    def from_desc(core_desc):
+        cores = 0
+        begin, end = -1, -1
+        tmp = 0
 
-    def _format_string_core_list(self, core_list):
-        core_list = core_list.split(",")
-        for element in core_list:
-            if element.find("-") != -1:
-                self._format_core_range(element)
-            else:
-                self.add(int(element))
+        def set_mask(b, e):
+            src = 0
+            if b == -1:
+                b = e
+            if b > e:
+                b, e = e, b
+            for i in range(b, e + 1):
+                src = src | (1 << i)
+            return src
 
-    def _format_core_range(self, core_range):
-        core_start, core_end = tuple([int(i) for i in core_range.split("-")])
-        if core_end < core_start:
-            core_end, core_start = core_start, core_end
+        for s in core_desc:
+            c = ord(s)
+            if 47 < c and 58 > c:
+                tmp = tmp * 10 + c - 48
+                continue
 
-        for i in range(core_start, core_end + 1):
-            self.add(i)
+            end = tmp
+            if begin == -1:
+                begin = tmp
 
-    @property
-    def core_mask(self):
-        mask = 0
-        for i in self:
-            mask += 1 << i
+            if c != 45:
+                cores |= set_mask(begin, end)
+                begin = -1
 
-        return mask
+            tmp = 0
 
-    @property
-    def core_list(self):
-        return ",".join([str(i) for i in sorted(self)])
-
-    @property
-    def core_range(self):
-
-        def fmt(s, e):
-            if s is e:
-                return str(s)
-            return "%s-%s" % (s, e)
-
-        all_cores = sorted(self)
-        core_list = []
-        core_start, core_end = all_cores[0], 0
-        step = 0
-        for curr in all_cores:
-            if curr is (core_start + step):
-                step += 1
-            else:
-                core_list.append(fmt(core_start, core_end))
-
-                step = 1
-                core_start = curr
-
-            core_end = curr
-
-        core_list.append(fmt(core_start, core_end))
-
-        return ",".join(core_list)
+        cores |= set_mask(begin, tmp)
+        return CPUcores(cores)
 
     def __str__(self):
-        return self.core_range
+        core_id, step = 0, 0
+        desc = []
+
+        def fmt(curr_core, step):
+            step -= 1
+            if step == 0:
+                return "%s" % (curr_core)
+            if step == 1:
+                return "%s,%s" % (curr_core - 1, curr_core)
+            return "%s-%s" % (curr_core - step, curr_core)
+
+        while core_id <= self.bit_length():
+            if 1 << core_id & self:
+                step += 1
+            elif step > 0:
+                desc.append(fmt(core_id - 1, step))
+                step = 0
+
+            core_id += 1
+
+        return ",".join(desc)
+
+    def __iter__(self):
+        core_id = 0
+        while core_id <= self.bit_length():
+            if 1 << core_id & self:
+                yield core_id
+            core_id += 1
+
+    def __len__(self):
+        tmp, length = self, 0
+        while tmp > 0:
+            length += 1
+            tmp &= (tmp - 1)
+
+        return length
+
+    def all_cores(self):
+        return ",".join(map(str, self))
+
+
+if __name__ == "__main__":
+    import optparse
+
+    parser = optparse.OptionParser()
+    parser.add_option("-d", "--desc", dest="desc", action="store",
+                      type="string", help="input core set description")
+
+    parser.add_option("-x", "--hex", action="store", type="string",
+                      help="input core mask bu hex")
+
+    parser.add_option("-b", "--bin", action="store", type="string",
+                      help="input core mask by binary")
+
+    parser.add_option("-l", "--line", action="count", help="separated by rows")
+
+    (options, args) = parser.parse_args()
+
+    core_set = None
+    if options.desc is not None:
+        core_set = CPUcores.from_desc(options.desc)
+    if options.hex is not None:
+        core_set = CPUcores.from_hex(options.hex)
+    if options.bin is not None:
+        core_set = CPUcores.from_bit(options.bin)
+
+    if core_set is None:
+        exit()
+    elif options.line is not None:
+        [print(core) for core in core_set]
+    else:
+        print(core_set.all_cores())
