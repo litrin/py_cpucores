@@ -146,6 +146,6 @@ if __name__ == "__main__":
     if core_set is None:
         exit()
     elif options.line is not None:
-        [print(core) for core in core_set]
+        for core in core_set: print (core)
     else:
         print(core_set.all_cores())
